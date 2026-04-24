@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/messagethread.tsx","./src/components/projecttimeline.tsx","./src/components/statusbadge.tsx","./src/hooks/useauth.ts","./src/hooks/useprojectdata.ts","./src/lib/supabase.ts","./src/lib/types.ts","./src/pages/loginpage.tsx","./src/pages/projectpage.tsx"],"version":"5.9.3"}

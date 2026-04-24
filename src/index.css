@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+    background: #0a0806;
+    color: #f7f3eb;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@layer utilities {
+  .scrollbar-mapa::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-mapa::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .scrollbar-mapa::-webkit-scrollbar-thumb {
+    background: rgba(175, 112, 55, 0.4);
+    border-radius: 3px;
+  }
+  .scrollbar-mapa::-webkit-scrollbar-thumb:hover {
+    background: rgba(175, 112, 55, 0.6);
+  }
+}
