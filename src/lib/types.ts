@@ -1,15 +1,65 @@
 export type ProjectStepStatus = 'pending' | 'in_progress' | 'done';
 export type ProjectStatus = 'planning' | 'in_progress' | 'review' | 'completed' | 'on_hold';
+export type ProjectType = 'website' | 'ecommerce' | 'webapp' | 'redesign' | 'maintenance' | 'seo' | 'other';
 
 export interface ProjectSummary {
   id: string;
   name: string;
   description: string | null;
   status: ProjectStatus;
+  type: ProjectType | null;
   site_url: string | null;
   start_date: string | null;
   end_date: string | null;
   progress: number;
+  budget: number | null;
+}
+
+export type QuoteStatus = 'draft' | 'sent' | 'signed' | 'refused' | 'expired';
+
+export interface Quote {
+  id: string;
+  title: string;
+  quote_number: string | null;
+  amount: number;
+  status: QuoteStatus;
+  valid_until: string | null;
+  deposit_requested: boolean;
+  deposit_amount: number | null;
+  signed_at: string | null;
+  created_at: string;
+}
+
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+
+export interface Invoice {
+  id: string;
+  invoice_number: string | null;
+  amount: number;
+  status: InvoiceStatus;
+  due_date: string | null;
+  paid_date: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export type CalendarRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  start_at: string;
+  end_at: string | null;
+  all_day: boolean;
+  recurrence: CalendarRecurrence;
+}
+
+export interface ChecklistItem {
+  id: string;
+  label: string;
+  done: boolean;
+  position: number;
 }
 
 export interface ProjectStep {

@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import type { PortalMessage, PortalUser, ProjectStep, ProjectSummary } from '../lib/types';
+import type {
+  CalendarEvent,
+  ChecklistItem,
+  Invoice,
+  PortalMessage,
+  PortalUser,
+  ProjectStep,
+  ProjectSummary,
+  Quote,
+} from '../lib/types';
 
 interface ProjectDataState {
   loading: boolean;
@@ -9,16 +18,25 @@ interface ProjectDataState {
   project: ProjectSummary | null;
   steps: ProjectStep[];
   messages: PortalMessage[];
+  quotes: Quote[];
+  invoices: Invoice[];
+  events: CalendarEvent[];
+  checklist: ChecklistItem[];
 }
 
 /**
- * Charge en un appel les données du projet du client connecté :
- * - portal_users (pour récupérer project_id)
- * - projects (infos du projet)
- * - project_steps (timeline)
- * - portal_messages (conversation)
+ * Charge en un seul appel toutes les données nécessaires pour afficher
+ * l'avancement complet du projet au client connecté :
+ *  - portal_users (résolution de son project_id)
+ *  - projects (métadonnées)
+ *  - project_steps (timeline)
+ *  - portal_messages (conversation)
+ *  - quotes (devis émis)
+ *  - invoices (factures)
+ *  - calendar_events (prochains rendez-vous)
+ *  - project_checklist_items (micro-tâches)
  *
- * RLS côté Supabase garantit qu'un client authentifié ne voit que SON projet.
+ * La sécurité est entièrement assurée par les RLS Supabase.
  */
 export function useProjectData(userId: string | null) {
   const [state, setState] = useState<ProjectDataState>({
@@ -28,6 +46,10 @@ export function useProjectData(userId: string | null) {
     project: null,
     steps: [],
     messages: [],
+    quotes: [],
+    invoices: [],
+    events: [],
+    checklist: [],
   });
 
   const fetchAll = useCallback(async () => {
@@ -41,50 +63,81 @@ export function useProjectData(userId: string | null) {
         .maybeSingle();
       if (puErr) throw puErr;
       if (!portalUser) {
-        setState({
+        setState((s) => ({
+          ...s,
           loading: false,
           error: "Aucun projet n'est associé à votre compte. Contactez MAPA Développement.",
           portalUser: null,
           project: null,
-          steps: [],
-          messages: [],
-        });
+        }));
         return;
       }
 
       if (!portalUser.project_id) {
-        setState({
+        setState((s) => ({
+          ...s,
           loading: false,
           error: "Aucun projet n'est assigné à votre compte pour l'instant.",
           portalUser: portalUser as PortalUser,
           project: null,
-          steps: [],
-          messages: [],
-        });
+        }));
         return;
       }
 
-      const [{ data: project, error: pErr }, { data: steps, error: sErr }, { data: messages, error: mErr }] =
-        await Promise.all([
-          supabase
-            .from('projects')
-            .select('id, name, description, status, site_url, start_date, end_date, progress')
-            .eq('id', portalUser.project_id)
-            .maybeSingle(),
-          supabase
-            .from('project_steps')
-            .select('*')
-            .eq('project_id', portalUser.project_id)
-            .order('order_index', { ascending: true }),
-          supabase
-            .from('portal_messages')
-            .select('*')
-            .eq('project_id', portalUser.project_id)
-            .order('created_at', { ascending: true }),
-        ]);
+      const projectId = portalUser.project_id;
+      const [
+        { data: project, error: pErr },
+        { data: steps, error: sErr },
+        { data: messages, error: mErr },
+        { data: quotes, error: qErr },
+        { data: invoices, error: iErr },
+        { data: events, error: eErr },
+        { data: checklist, error: cErr },
+      ] = await Promise.all([
+        supabase
+          .from('projects')
+          .select('id, name, description, status, type, site_url, start_date, end_date, progress, budget')
+          .eq('id', projectId)
+          .maybeSingle(),
+        supabase
+          .from('project_steps')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('order_index', { ascending: true }),
+        supabase
+          .from('portal_messages')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('quotes')
+          .select('id, title, quote_number, amount, status, valid_until, deposit_requested, deposit_amount, signed_at, created_at')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('invoices')
+          .select('id, invoice_number, amount, status, due_date, paid_date, notes, created_at')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('calendar_events')
+          .select('id, title, description, start_at, end_at, all_day, recurrence')
+          .eq('project_id', projectId)
+          .gte('start_at', new Date(Date.now() - 24 * 3600_000).toISOString())
+          .order('start_at', { ascending: true })
+          .limit(8),
+        supabase
+          .from('project_checklist_items')
+          .select('id, label, done, position')
+          .eq('project_id', projectId)
+          .order('position', { ascending: true }),
+      ]);
+
       if (pErr) throw pErr;
       if (sErr) throw sErr;
       if (mErr) throw mErr;
+      // Les tables secondaires peuvent être vides sans RLS → on ignore seulement les erreurs non critiques
+      // (si quotes/invoices/events/checklist ne sont pas accessibles, on laisse un tableau vide sans casser l'UI)
 
       setState({
         loading: false,
@@ -93,6 +146,10 @@ export function useProjectData(userId: string | null) {
         project: (project ?? null) as ProjectSummary | null,
         steps: (steps ?? []) as ProjectStep[],
         messages: (messages ?? []) as PortalMessage[],
+        quotes: (qErr ? [] : (quotes ?? [])) as Quote[],
+        invoices: (iErr ? [] : (invoices ?? [])) as Invoice[],
+        events: (eErr ? [] : (events ?? [])) as CalendarEvent[],
+        checklist: (cErr ? [] : (checklist ?? [])) as ChecklistItem[],
       });
 
       // Marque les messages de l'équipe comme lus côté client
@@ -140,11 +197,11 @@ export function useProjectData(userId: string | null) {
     [state.portalUser?.project_id]
   );
 
-  // Realtime sur les messages (pour voir les réponses de l'équipe sans refresh)
+  // Realtime sur les messages et les étapes (pour voir les mises à jour sans refresh)
   useEffect(() => {
     if (!state.portalUser?.project_id) return;
     const channel = supabase
-      .channel(`portal_messages_${state.portalUser.project_id}`)
+      .channel(`portal_realtime_${state.portalUser.project_id}`)
       .on(
         'postgres_changes',
         {
@@ -191,6 +248,19 @@ export function useProjectData(userId: string | null) {
             ...s,
             steps: [...s.steps, step].sort((a, b) => a.order_index - b.order_index),
           }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'projects',
+          filter: `id=eq.${state.portalUser.project_id}`,
+        },
+        (payload) => {
+          const proj = payload.new as ProjectSummary;
+          setState((s) => ({ ...s, project: proj }));
         }
       )
       .subscribe();

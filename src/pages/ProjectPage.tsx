@@ -1,15 +1,31 @@
-import { LogOut, Loader2, Mail, ExternalLink } from 'lucide-react';
+import { LogOut, Loader2, Mail } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useProjectData } from '../hooks/useProjectData';
 import { ProjectTimeline } from '../components/ProjectTimeline';
 import { MessageThread } from '../components/MessageThread';
-import { ProjectStatusBadge } from '../components/StatusBadge';
+import { ProjectInfoCard } from '../components/ProjectInfoCard';
+import { FinanceCard } from '../components/FinanceCard';
+import { UpcomingEvents } from '../components/UpcomingEvents';
+import { ChecklistPreview } from '../components/ChecklistPreview';
+import { TeamContact } from '../components/TeamContact';
 
 export function ProjectPage({ session }: { session: Session }) {
   const userId = session.user.id;
-  const { loading, error, portalUser, project, steps, messages, sendMessage } = useProjectData(userId);
+  const {
+    loading,
+    error,
+    portalUser,
+    project,
+    steps,
+    messages,
+    quotes,
+    invoices,
+    events,
+    checklist,
+    sendMessage,
+  } = useProjectData(userId);
 
   const progress = useMemo(() => {
     if (!project) return 0;
@@ -28,7 +44,7 @@ export function ProjectPage({ session }: { session: Session }) {
     <div className="min-h-full flex flex-col">
       {/* Topbar */}
       <header className="sticky top-0 z-30 backdrop-blur-lg bg-ws-void/80 border-b border-ws-line">
-        <div className="max-w-5xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="MAPA" className="h-8 w-auto" />
             <div className="h-6 w-px bg-ws-line hidden md:block" />
@@ -52,7 +68,7 @@ export function ProjectPage({ session }: { session: Session }) {
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-5 md:px-8 py-8 md:py-12">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-5 md:px-8 py-8 md:py-12">
         {loading ? (
           <div className="flex items-center justify-center gap-3 text-ws-mist py-24">
             <Loader2 size={16} className="animate-spin" />
@@ -65,7 +81,7 @@ export function ProjectPage({ session }: { session: Session }) {
             </h2>
             <p className="text-sm text-ws-mist mb-6 leading-relaxed">{error}</p>
             <a
-              href="mailto:contact@mapa-dev.fr"
+              href="mailto:contact@mapa-developpement.fr"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ws-accent text-ws-void text-sm font-semibold hover:brightness-110 transition-all"
             >
               <Mail size={14} />
@@ -74,79 +90,46 @@ export function ProjectPage({ session }: { session: Session }) {
           </div>
         ) : project ? (
           <div className="space-y-8 md:space-y-10">
-            {/* Bandeau projet */}
-            <section className="rounded-3xl border border-ws-line bg-gradient-to-b from-ws-panel/80 to-ws-panel/40 p-6 md:p-8 relative overflow-hidden">
-              <div
-                className="absolute -top-20 -right-20 w-64 h-64 rounded-full pointer-events-none opacity-50"
-                style={{
-                  background:
-                    'radial-gradient(circle, rgba(175,112,55,0.22) 0%, transparent 70%)',
-                }}
-              />
-              <div className="relative">
-                <div className="flex items-center flex-wrap gap-3 mb-3">
-                  <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-ws-accent">
-                    Votre projet
-                  </span>
-                  <ProjectStatusBadge status={project.status} />
-                </div>
-                <h1 className="font-serif text-3xl md:text-4xl font-light text-ws-paper leading-tight">
-                  {project.name}
-                </h1>
-                {project.description && (
-                  <p className="text-sm md:text-base text-ws-ink mt-3 leading-relaxed max-w-2xl">
-                    {project.description}
-                  </p>
-                )}
+            {/* Bandeau projet enrichi avec dates + étape + lien site */}
+            <ProjectInfoCard
+              project={project}
+              progress={progress}
+              currentStepTitle={currentStep?.title}
+            />
 
-                {/* Progression */}
-                <div className="mt-7 flex items-center gap-4">
-                  <div className="flex-1 h-1.5 rounded-full bg-ws-deep/60 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-ws-accent-muted to-ws-accent transition-all duration-700"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-mono text-ws-accent font-semibold tabular-nums">
-                    {progress}%
-                  </span>
-                </div>
-
-                {/* Étape courante + lien site */}
-                <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-mono">
-                  {currentStep && (
-                    <span className="text-ws-mist">
-                      <span className="text-ws-accent">Étape en cours :</span> {currentStep.title}
-                    </span>
-                  )}
-                  {project.site_url && (
-                    <a
-                      href={project.site_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 text-ws-ink hover:text-ws-accent transition-colors"
-                    >
-                      <ExternalLink size={12} />
-                      Aperçu du site
-                    </a>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Grid desktop : timeline + messages côte à côte */}
+            {/* Ligne principale : timeline (2/3) + messagerie (1/3) */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
-              <div className="lg:col-span-3">
-                <h2 className="font-display text-sm font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em] text-[11px] font-mono">
-                  Avancement
-                </h2>
-                <ProjectTimeline steps={steps} />
+              <div className="lg:col-span-3 space-y-8">
+                <div>
+                  <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
+                    Avancement détaillé
+                  </h2>
+                  <ProjectTimeline steps={steps} />
+                </div>
+
+                {(quotes.length > 0 || invoices.length > 0) && (
+                  <div>
+                    <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
+                      Récapitulatif financier
+                    </h2>
+                    <FinanceCard quotes={quotes} invoices={invoices} />
+                  </div>
+                )}
               </div>
-              <div className="lg:col-span-2">
-                <h2 className="font-display text-sm font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em] text-[11px] font-mono">
-                  Communication
-                </h2>
-                <MessageThread messages={messages} onSend={sendMessage} />
+
+              <div className="lg:col-span-2 space-y-8">
+                <div>
+                  <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
+                    Communication
+                  </h2>
+                  <MessageThread messages={messages} onSend={sendMessage} />
+                </div>
+
+                <UpcomingEvents events={events} />
+
+                <ChecklistPreview items={checklist} />
+
+                <TeamContact />
               </div>
             </div>
           </div>
@@ -155,7 +138,7 @@ export function ProjectPage({ session }: { session: Session }) {
 
       <footer className="border-t border-ws-line py-6 text-center">
         <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-ws-mist">
-          © MAPA Développement · contact@mapa-dev.fr
+          © MAPA Développement · contact@mapa-developpement.fr
         </p>
       </footer>
     </div>

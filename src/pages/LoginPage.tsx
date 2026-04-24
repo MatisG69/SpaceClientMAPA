@@ -122,10 +122,10 @@ export function LoginPage() {
             <br />
             Problème de connexion ? Contactez-nous à{' '}
             <a
-              href="mailto:contact@mapa-dev.fr"
+              href="mailto:contact@mapa-developpement.fr"
               className="text-ws-accent hover:text-ws-accent-soft"
             >
-              contact@mapa-dev.fr
+              contact@mapa-developpement.fr
             </a>
           </p>
         </form>
