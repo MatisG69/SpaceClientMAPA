@@ -64,33 +64,37 @@ export function ProjectInfoCard({ project, progress, currentStepTitle }: Project
           </div>
         </div>
 
-        {/* Infos clés — grille 4 */}
-        <div className="mt-7 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <InfoCell
-            icon={<Calendar size={12} />}
-            label="Démarrage"
-            value={formatDateLong(project.start_date)}
-            sub={elapsed != null ? `il y a ${elapsed} j` : undefined}
-          />
-          <InfoCell
-            icon={<Calendar size={12} />}
-            label="Livraison estimée"
-            value={formatDateLong(project.end_date)}
-            sub={
-              remaining != null
-                ? remaining > 0
-                  ? `dans ${remaining} j`
-                  : remaining === 0
-                  ? "aujourd'hui"
-                  : `dépassée de ${Math.abs(remaining)} j`
-                : undefined
-            }
-            accent={remaining != null && remaining < 0}
-          />
+        {/* Infos clés — n'affiche que les cellules pertinentes (pas de tiret vide) */}
+        <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {project.start_date && (
+            <InfoCell
+              icon={<Calendar size={12} />}
+              label="Démarrage"
+              value={formatDateLong(project.start_date)}
+              sub={elapsed != null ? `il y a ${elapsed} j` : undefined}
+            />
+          )}
+          {project.end_date && (
+            <InfoCell
+              icon={<Calendar size={12} />}
+              label="Livraison estimée"
+              value={formatDateLong(project.end_date)}
+              sub={
+                remaining != null
+                  ? remaining > 0
+                    ? `dans ${remaining} j`
+                    : remaining === 0
+                    ? "aujourd'hui"
+                    : `dépassée de ${Math.abs(remaining)} j`
+                  : undefined
+              }
+              accent={remaining != null && remaining < 0}
+            />
+          )}
           <InfoCell
             icon={<Hourglass size={12} />}
             label="Étape en cours"
-            value={currentStepTitle || '—'}
+            value={currentStepTitle || 'Cadrage en cours'}
           />
           <InfoCell
             icon={<ExternalLink size={12} />}

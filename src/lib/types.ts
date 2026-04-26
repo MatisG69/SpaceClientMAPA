@@ -1,6 +1,12 @@
 export type ProjectStepStatus = 'pending' | 'in_progress' | 'done';
-export type ProjectStatus = 'planning' | 'in_progress' | 'review' | 'completed' | 'on_hold';
-export type ProjectType = 'website' | 'ecommerce' | 'webapp' | 'redesign' | 'maintenance' | 'seo' | 'other';
+export type ProjectStatus =
+  | 'planning'
+  | 'quote_sent'
+  | 'in_progress'
+  | 'review'
+  | 'completed'
+  | 'on_hold';
+export type ProjectType = 'website' | 'ecommerce' | 'webapp' | 'redesign' | 'maintenance' | 'seo' | 'automation' | 'other';
 
 export interface ProjectSummary {
   id: string;
@@ -13,12 +19,14 @@ export interface ProjectSummary {
   end_date: string | null;
   progress: number;
   budget: number | null;
+  created_at?: string;
 }
 
 export type QuoteStatus = 'draft' | 'sent' | 'signed' | 'refused' | 'expired';
 
 export interface Quote {
   id: string;
+  project_id: string | null;
   title: string;
   quote_number: string | null;
   amount: number;
@@ -34,6 +42,7 @@ export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
 export interface Invoice {
   id: string;
+  project_id: string | null;
   invoice_number: string | null;
   amount: number;
   status: InvoiceStatus;
@@ -53,6 +62,8 @@ export interface CalendarEvent {
   end_at: string | null;
   all_day: boolean;
   recurrence: CalendarRecurrence;
+  project_id?: string | null;
+  client_id?: string | null;
 }
 
 export interface ChecklistItem {
@@ -91,5 +102,7 @@ export interface PortalUser {
   id: string;
   email: string;
   name: string | null;
-  project_id: string | null;
+  client_id: string | null;
+  /** @deprecated conservé pour rétro-compatibilité */
+  project_id?: string | null;
 }
