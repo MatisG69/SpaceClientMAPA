@@ -107,14 +107,12 @@ export function ProjectPage({ session }: { session: Session }) {
                   <ProjectTimeline steps={steps} />
                 </div>
 
-                {(quotes.length > 0 || invoices.length > 0) && (
-                  <div>
-                    <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
-                      Récapitulatif financier
-                    </h2>
-                    <FinanceCard quotes={quotes} invoices={invoices} />
-                  </div>
-                )}
+                <div>
+                  <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
+                    Récapitulatif financier
+                  </h2>
+                  <FinanceCard quotes={quotes} invoices={invoices} />
+                </div>
               </div>
 
               <div className="lg:col-span-2 space-y-8">

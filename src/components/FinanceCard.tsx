@@ -28,9 +28,7 @@ export function FinanceCard({ quotes, invoices }: FinanceCardProps) {
     .filter((i) => i.status === 'overdue')
     .reduce((acc, i) => acc + i.amount, 0);
 
-  if (!primaryQuote && invoices.length === 0) {
-    return null;
-  }
+  const isEmpty = !primaryQuote && invoices.length === 0;
 
   return (
     <section className="rounded-3xl border border-ws-line bg-ws-panel/60 overflow-hidden">
@@ -39,7 +37,18 @@ export function FinanceCard({ quotes, invoices }: FinanceCardProps) {
         <h3 className="font-display text-base font-semibold text-ws-paper">Finances</h3>
       </div>
 
-      <div className="p-5 space-y-5">
+      {isEmpty && (
+        <div className="px-5 py-8 text-center">
+          <FileText size={22} className="mx-auto mb-3 text-ws-mist/60" />
+          <p className="text-sm text-ws-paper font-medium mb-1">Aucun devis ni facture pour le moment</p>
+          <p className="text-[12px] text-ws-mist leading-relaxed max-w-sm mx-auto">
+            Les éléments financiers liés à votre projet (devis, acompte, factures) apparaîtront
+            ici dès que MAPA Développement les émettra.
+          </p>
+        </div>
+      )}
+
+      <div className={`p-5 space-y-5${isEmpty ? ' hidden' : ''}`}>
         {primaryQuote && (
           <div className="rounded-2xl border border-ws-line bg-ws-deep/30 p-4">
             <div className="flex items-center justify-between mb-3">
