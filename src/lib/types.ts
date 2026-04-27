@@ -36,6 +36,10 @@ export interface Quote {
   deposit_amount: number | null;
   signed_at: string | null;
   created_at: string;
+  /** Date d'acompte attendue (texte ISO yyyy-mm-dd) — utilisée pour la génération du PDF de facture liée. */
+  expected_acompte_date?: string | null;
+  /** Date de livraison/solde attendue (texte ISO yyyy-mm-dd) — utilisée pour la génération du PDF de facture liée. */
+  expected_delivery_date?: string | null;
 }
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
@@ -50,6 +54,8 @@ export interface Invoice {
   paid_date: string | null;
   notes: string | null;
   created_at: string;
+  /** Référence au devis dont cette facture découle (acompte/solde). */
+  source_quote_id?: string | null;
 }
 
 export type CalendarRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';

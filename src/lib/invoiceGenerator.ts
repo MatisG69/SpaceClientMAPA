@@ -183,16 +183,6 @@ function vendorLegalLine(v: VendorInfo): string {
   return regimeMention
 }
 
-function vendorIdentityBlock(v: VendorInfo): string {
-  // Bloc complet pour le footer / partie « Émetteur »
-  return `${v.name} · ${v.exploitantName}, ${v.legalEntity} (${v.legalEntity === 'EI' ? 'EI' : 'EI'})<br>
-${v.address}, ${v.postalCode} ${v.city}<br>
-SIREN ${v.siren} · SIRET ${v.siret}${v.apeCode ? ` · APE ${v.apeCode}` : ''}<br>
-${vendorLegalLine(v)}<br>
-${v.email} · ${v.phone}<br>
-<em>${v.vatMention ?? 'TVA non applicable, art. 293 B du CGI'}</em>`
-}
-
 function buildInvoicePage(params: InvoiceParams): string {
   const {
     client,

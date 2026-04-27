@@ -2,6 +2,7 @@ import type { ProjectStatus, ProjectStepStatus } from '../lib/types';
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
   planning: 'En préparation',
+  quote_sent: 'Devis envoyé',
   in_progress: 'En cours',
   review: 'En relecture',
   completed: 'Livré',
@@ -17,6 +18,7 @@ export const STEP_STATUS_LABEL: Record<ProjectStepStatus, string> = {
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
   const styles: Record<ProjectStatus, string> = {
     planning: 'bg-ws-deep/60 text-ws-ink border-ws-line',
+    quote_sent: 'bg-ws-accent/10 text-ws-accent-soft border-ws-accent/30',
     in_progress: 'bg-ws-accent/15 text-ws-accent border-ws-accent/40',
     review: 'bg-amber-500/10 text-amber-200 border-amber-500/30',
     completed: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
