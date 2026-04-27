@@ -10,6 +10,8 @@ import { FinanceCard } from '../components/FinanceCard';
 import { UpcomingEvents } from '../components/UpcomingEvents';
 import { ChecklistPreview } from '../components/ChecklistPreview';
 import { TeamContact } from '../components/TeamContact';
+import { DocumentsSection } from '../components/DocumentsSection';
+import type { Project } from '../lib/types';
 
 export function ProjectPage({ session }: { session: Session }) {
   const userId = session.user.id;
@@ -17,6 +19,7 @@ export function ProjectPage({ session }: { session: Session }) {
     loading,
     error,
     portalUser,
+    client,
     projects,
     selectedProject,
     selectedProjectId,
@@ -27,6 +30,7 @@ export function ProjectPage({ session }: { session: Session }) {
     invoices,
     events,
     checklist,
+    documents,
     sendMessage,
   } = useProjectData(userId);
 
@@ -166,6 +170,19 @@ export function ProjectPage({ session }: { session: Session }) {
                     Récapitulatif financier
                   </h2>
                   <FinanceCard quotes={projectQuotes} invoices={projectInvoices} />
+                </div>
+
+                <div>
+                  <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
+                    Documents
+                  </h2>
+                  <DocumentsSection
+                    client={client}
+                    projects={projects as unknown as Project[]}
+                    quotes={quotes}
+                    invoices={invoices}
+                    documents={documents}
+                  />
                 </div>
               </div>
 

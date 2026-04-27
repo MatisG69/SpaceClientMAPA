@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import type {
   CalendarEvent,
   ChecklistItem,
+  Client,
+  ClientDocument,
   Invoice,
   PortalMessage,
   PortalUser,
@@ -15,6 +17,8 @@ interface ProjectDataState {
   loading: boolean;
   error: string | null;
   portalUser: PortalUser | null;
+  /** Fiche client complète — utilisée pour générer les PDFs côté portail */
+  client: Client | null;
   /** Tous les projets du client lié à l'utilisateur portail. */
   projects: ProjectSummary[];
   /** Identifiant du projet actuellement consulté (premier projet par défaut). */
@@ -29,6 +33,8 @@ interface ProjectDataState {
   events: CalendarEvent[];
   /** Checklist du projet actuellement consulté. */
   checklist: ChecklistItem[];
+  /** Documents arbitraires uploadés par l'admin (table client_documents). */
+  documents: ClientDocument[];
 }
 
 const PROJECT_STATUS_ORDER: Record<string, number> = {
@@ -54,6 +60,7 @@ export function useProjectData(userId: string | null) {
     loading: true,
     error: null,
     portalUser: null,
+    client: null,
     projects: [],
     selectedProjectId: null,
     steps: [],
@@ -62,6 +69,7 @@ export function useProjectData(userId: string | null) {
     invoices: [],
     events: [],
     checklist: [],
+    documents: [],
   });
 
   /** Tri pipeline : projets actifs d'abord, puis par date desc */
@@ -108,25 +116,32 @@ export function useProjectData(userId: string | null) {
         return;
       }
 
-      // 1. Récupérer tous les projets du client + données globales (devis/factures/événements client)
+      // 1. Récupérer la fiche client complète + projets + données globales
       const [
+        { data: clientRow, error: cliErr },
         { data: projectsData, error: projsErr },
         { data: quotes, error: qErr },
         { data: invoices, error: iErr },
         { data: events, error: eErr },
+        { data: documents, error: dErr },
       ] = await Promise.all([
         supabase
+          .from('clients')
+          .select('*')
+          .eq('id', clientId)
+          .maybeSingle(),
+        supabase
           .from('projects')
-          .select('id, name, description, status, type, site_url, start_date, end_date, progress, budget, created_at')
+          .select('*')
           .eq('client_id', clientId),
         supabase
           .from('quotes')
-          .select('id, project_id, title, quote_number, amount, status, valid_until, deposit_requested, deposit_amount, signed_at, created_at')
+          .select('id, project_id, title, quote_number, amount, status, valid_until, deposit_requested, deposit_amount, signed_at, created_at, expected_acompte_date, expected_delivery_date')
           .eq('client_id', clientId)
           .order('created_at', { ascending: false }),
         supabase
           .from('invoices')
-          .select('id, project_id, invoice_number, amount, status, due_date, paid_date, notes, created_at')
+          .select('id, project_id, invoice_number, amount, status, due_date, paid_date, notes, source_quote_id, created_at')
           .eq('client_id', clientId)
           .order('created_at', { ascending: false }),
         supabase
@@ -136,7 +151,14 @@ export function useProjectData(userId: string | null) {
           .gte('start_at', new Date(Date.now() - 24 * 3600_000).toISOString())
           .order('start_at', { ascending: true })
           .limit(12),
+        supabase
+          .from('client_documents')
+          .select('*')
+          .eq('client_id', clientId)
+          .order('created_at', { ascending: false }),
       ]);
+      void cliErr;
+      void dErr;
 
       if (projsErr) throw projsErr;
 
@@ -146,6 +168,7 @@ export function useProjectData(userId: string | null) {
           loading: false,
           error: null,
           portalUser: portalUser as PortalUser,
+          client: (clientRow ?? null) as Client | null,
           projects: [],
           selectedProjectId: null,
           steps: [],
@@ -154,6 +177,7 @@ export function useProjectData(userId: string | null) {
           invoices: (iErr ? [] : (invoices ?? [])) as Invoice[],
           events: (eErr ? [] : (events ?? [])) as CalendarEvent[],
           checklist: [],
+          documents: (documents ?? []) as ClientDocument[],
         });
         return;
       }
@@ -190,6 +214,7 @@ export function useProjectData(userId: string | null) {
         loading: false,
         error: null,
         portalUser: portalUser as PortalUser,
+        client: (clientRow ?? null) as Client | null,
         projects,
         selectedProjectId,
         steps: (steps ?? []) as ProjectStep[],
@@ -198,6 +223,7 @@ export function useProjectData(userId: string | null) {
         invoices: (iErr ? [] : (invoices ?? [])) as Invoice[],
         events: (eErr ? [] : (events ?? [])) as CalendarEvent[],
         checklist: (cErr ? [] : (checklist ?? [])) as ChecklistItem[],
+        documents: (documents ?? []) as ClientDocument[],
       });
 
       // Marque les messages de l'équipe comme lus

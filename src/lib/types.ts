@@ -106,3 +106,71 @@ export interface PortalUser {
   /** @deprecated conservé pour rétro-compatibilité */
   project_id?: string | null;
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Types « full » utilisés uniquement par les générateurs PDF
+   (devis / factures côté client). Calqués sur les types CRM.
+   ───────────────────────────────────────────────────────────────── */
+
+export interface Client {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  address: string | null;
+  city: string | null;
+  website: string | null;
+  status?: string;
+  source?: string | null;
+  notes?: string | null;
+  legal_form?: string | null;
+  siret?: string | null;
+  vat_number?: string | null;
+  contact_role?: string | null;
+  profession?: string | null;
+  avatar_color?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Project {
+  id: string;
+  client_id: string | null;
+  name: string;
+  description: string | null;
+  site_url: string | null;
+  status: ProjectStatus;
+  budget: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  progress: number;
+  type: ProjectType | null;
+  has_recurring_support?: boolean;
+  recurring_support_amount?: number | null;
+  recurring_support_label?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/* Document arbitraire uploadé par l'admin pour le client */
+export type ClientDocumentCategory =
+  | 'contrat'
+  | 'livrable'
+  | 'compte-rendu'
+  | 'charte'
+  | 'autre';
+
+export interface ClientDocument {
+  id: string;
+  client_id: string;
+  project_id: string | null;
+  category: ClientDocumentCategory;
+  name: string;
+  description: string | null;
+  file_path: string;
+  mime_type: string | null;
+  file_size: number | null;
+  created_at: string;
+  updated_at: string;
+}
