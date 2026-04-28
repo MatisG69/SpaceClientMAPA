@@ -163,6 +163,10 @@ export interface Project {
   prestation_scope?: string | null;
   /** Périmètre de la prestation de suivi mensuel. */
   recurring_support_scope?: string | null;
+  /** Titre custom du contrat de suivi. */
+  recurring_support_title?: string | null;
+  /** Description courte du suivi (table tarification). */
+  recurring_support_description?: string | null;
   created_at?: string;
   updated_at?: string;
 }

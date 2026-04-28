@@ -112,11 +112,19 @@ export function DocumentsSection({
         fileName: `devis-${q.quote_number ?? q.id}.pdf`,
         onView: () => {
           if (!client) return;
+          const qNotes = (q as Quote & { notes?: string | null }).notes ?? null;
           const isRecurring = isRecurringQuoteHeuristic({
             quote_number: q.quote_number,
             title: q.title,
-            notes: (q as Quote & { notes?: string | null }).notes,
+            notes: qNotes,
           });
+
+          let parentQuoteRef: string | null = null;
+          if (isRecurring && qNotes) {
+            const match = qNotes.match(/Suivi de la prestation livrée au titre du devis [^\n]+/);
+            if (match) parentQuoteRef = match[0];
+          }
+
           const html = generateDevisHTML({
             client: client as Client,
             project: project as Project | null,
@@ -130,6 +138,9 @@ export function DocumentsSection({
             includeCGV: !isRecurring,
             isRecurring,
             recurringScope: project?.recurring_support_scope ?? null,
+            recurringTitle: isRecurring ? q.title : null,
+            recurringDescription: project?.recurring_support_description ?? null,
+            parentQuoteRef,
             acompteDateISO: q.expected_acompte_date ?? null,
             deliveryDateISO: q.expected_delivery_date ?? null,
           });
