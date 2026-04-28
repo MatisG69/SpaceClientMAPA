@@ -170,6 +170,27 @@ function upperLastName(fullName: string | null | undefined): string {
   return parts.join(' ') + ' ' + last
 }
 
+/** Capitalise chaque mot (espaces et tirets). « linda » → « Linda ». */
+function capitalizeName(s: string): string {
+  return s
+    .split(/(\s+|-)/)
+    .map((part) => {
+      if (!part || /^\s+$/.test(part) || part === '-') return part
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+    })
+    .join('')
+}
+
+/** Convention typographique FR : « Prénom NOM ». Cf. devisGenerator pour la doc. */
+function formatClientFullName(client: Client): string {
+  const fn = client.first_name?.trim() || ''
+  const ln = client.last_name?.trim() || ''
+  if (fn && ln) return `${capitalizeName(fn)} ${ln.toUpperCase()}`
+  if (ln) return ln.toUpperCase()
+  if (fn) return capitalizeName(fn)
+  return upperLastName(client.name)
+}
+
 function vendorLegalLine(v: VendorInfo): string {
   // Mention obligatoire de la forme juridique selon le régime
   let regimeMention = ''
@@ -273,13 +294,13 @@ function buildInvoicePage(params: InvoiceParams): string {
     </div>
     <div class="info-block">
       <div class="key">Client</div>
-      <div class="val">${client.company || upperLastName(client.name)}</div>
+      <div class="val">${client.company || formatClientFullName(client)}</div>
       <div class="line">
         ${client.legal_form ? `${client.legal_form}<br>` : ''}
         ${client.address ? `${client.address}${client.city ? ', ' : '<br>'}` : ''}${client.city ? `${client.city}<br>` : ''}
         ${client.siret ? `SIRET : ${client.siret}<br>` : ''}
         ${client.vat_number ? `TVA : ${client.vat_number}<br>` : ''}
-        ${client.name && client.company && client.name !== client.company ? `<strong style="color:#C8BFB0">Contact :</strong> ${upperLastName(client.name)}${client.contact_role ? `, ${client.contact_role}` : ''}<br>` : ''}
+        ${client.name && client.company && client.name !== client.company ? `<strong style="color:#C8BFB0">Contact :</strong> ${formatClientFullName(client)}${client.contact_role ? `, ${client.contact_role}` : ''}<br>` : ''}
         ${client.email ? `${client.email}<br>` : ''}
         ${client.phone ? `${client.phone}` : ''}
       </div>
