@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import type { Client, ClientDocument, Invoice, Project, Quote } from '../lib/types';
 import { formatDateShort, formatEur } from '../lib/format';
-import { generateDevisHTML } from '../lib/devisGenerator';
+import { generateDevisHTML, isRecurringQuoteHeuristic } from '../lib/devisGenerator';
 import { generateInvoiceHTML, generatePairedInvoiceHTML, MAPA_VENDOR } from '../lib/invoiceGenerator';
 import { supabase } from '../lib/supabase';
 
@@ -112,6 +112,11 @@ export function DocumentsSection({
         fileName: `devis-${q.quote_number ?? q.id}.pdf`,
         onView: () => {
           if (!client) return;
+          const isRecurring = isRecurringQuoteHeuristic({
+            quote_number: q.quote_number,
+            title: q.title,
+            notes: (q as Quote & { notes?: string | null }).notes,
+          });
           const html = generateDevisHTML({
             client: client as Client,
             project: project as Project | null,
@@ -122,7 +127,9 @@ export function DocumentsSection({
               q.deposit_requested && q.deposit_amount && q.amount > 0
                 ? Math.round((q.deposit_amount / q.amount) * 100)
                 : 30,
-            includeCGV: true,
+            includeCGV: !isRecurring,
+            isRecurring,
+            recurringScope: project?.recurring_support_scope ?? null,
             acompteDateISO: q.expected_acompte_date ?? null,
             deliveryDateISO: q.expected_delivery_date ?? null,
           });

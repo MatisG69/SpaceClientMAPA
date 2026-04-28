@@ -33,6 +33,30 @@ export interface DevisParams {
    */
   acompteDateISO?: string | null
   deliveryDateISO?: string | null
+  /**
+   * Mode « abonnement mensuel » : génère un devis sans acompte ni solde.
+   * Le `amount` est interprété comme le **prix mensuel HT** ; affiché sous
+   * la forme « X € HT / mois ». Désactive le calendrier acompte/livraison.
+   * Si `recurringScope` est fourni, il prime sur le périmètre du projet.
+   */
+  isRecurring?: boolean
+  /** Périmètre détaillé du suivi (texte multi-ligne, une ligne = une puce). */
+  recurringScope?: string | null
+}
+
+/**
+ * Heuristique : un devis est-il un devis « suivi mensuel » ?
+ * Utilisée par les pages d'aperçu pour activer automatiquement le mode `isRecurring`.
+ */
+export function isRecurringQuoteHeuristic(q: {
+  quote_number?: string | null
+  title?: string | null
+  notes?: string | null
+}): boolean {
+  if (q.quote_number?.endsWith('-SUIVI')) return true
+  if (q.title?.toLowerCase().startsWith('suivi mensuel')) return true
+  if (q.notes?.toLowerCase().startsWith('devis abonnement mensuel')) return true
+  return false
 }
 
 /** Tarifs catalogue par type (utilisés en repli si aucun budget n'est saisi sur le projet) */
@@ -56,7 +80,59 @@ export function getPriceForProject(project: Project | null): number | null {
   return PROJECT_PRICES[project.type] ?? null
 }
 
+/**
+ * Sanitize les caractères Unicode "exotiques" qui peuvent ne pas être rendus
+ * par les polices web (Inter / Playfair Display) lors de la conversion HTML→PDF
+ * via Puppeteer headless. Remplacements ASCII équivalents ou typographie FR.
+ */
+function sanitizeScopeText(s: string): string {
+  return s
+    // Flèches doubles / bidirectionnelles → tiret long
+    .replace(/[↔↬↭⇔⟺]/g, '—')
+    // Carrés pleins / barres verticales bizarres → barre simple
+    .replace(/[■▮█▉▊▋▌▍▎▏]/g, '|')
+    // Tabulations / ZWJ / ZWSP → espace simple
+    .replace(/[\t​‌‍﻿]/g, ' ')
+    // Espaces multiples → un seul
+    .replace(/  +/g, ' ')
+}
+
 function prestationsForType(project: Project | null): string[] {
+  // 1) Périmètre custom saisi sur le projet — priorité absolue
+  const rawScope = project?.prestation_scope?.trim()
+  if (rawScope) {
+    const sanitized = sanitizeScopeText(rawScope)
+
+    // Découpage par sauts de ligne en priorité
+    let lines = sanitized
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0)
+
+    // Cas où l'utilisateur a tapé tout sur une seule ligne avec des séparateurs
+    // typographiques (— en dash, – em dash, • bullet, · middle dot).
+    // On re-split si on détecte au moins 2 occurrences d'un séparateur.
+    if (lines.length === 1) {
+      const single = lines[0]
+      const candidates = [' — ', ' – ', ' • ', ' · ', ' / ']
+      for (const sep of candidates) {
+        const parts = single.split(sep)
+        if (parts.length >= 2) {
+          lines = parts
+          break
+        }
+      }
+    }
+
+    // Nettoyage final : retire bullets pré-existants en début, trim
+    const cleaned = lines
+      .map((l) => l.replace(/^[\s•‣◦⁃\-*·—–]+/, '').trim())
+      .filter((l) => l.length > 0)
+
+    if (cleaned.length > 0) return cleaned
+  }
+
+  // 2) Fallback catalogue selon le `type` du projet
   const type = project?.type ?? 'other'
   switch (type) {
     case 'website':
@@ -156,6 +232,25 @@ function upperLastName(fullName: string | null | undefined): string {
   return parts.join(' ') + ' ' + last
 }
 
+/**
+ * Formate le nom du contact selon la convention typographique française
+ * pour les devis et factures : « Prénom NOM ».
+ *
+ * Priorité :
+ *   1. `first_name` + `last_name` si tous deux renseignés → cas mixte + MAJ.
+ *   2. `last_name` seul → MAJUSCULES.
+ *   3. `first_name` seul → cas mixte.
+ *   4. Fallback `name` avec heuristique « dernier mot en MAJ ».
+ */
+function formatClientFullName(client: Client): string {
+  const fn = client.first_name?.trim() || ''
+  const ln = client.last_name?.trim() || ''
+  if (fn && ln) return `${fn} ${ln.toUpperCase()}`
+  if (ln) return ln.toUpperCase()
+  if (fn) return fn
+  return upperLastName(client.name)
+}
+
 /** Convertit un entier 0-100 en lettres françaises (orthographe contractuelle) */
 function numberToFrenchWords(n: number): string {
   const i = Math.max(0, Math.min(100, Math.round(n)))
@@ -234,11 +329,17 @@ export function generateDevisHTML(params: DevisParams): string {
     validUntilISO,
     depositPercent = 30,
     customNotes,
-    includeCGV = false,
+    includeCGV: includeCGVRaw = false,
     additionalLines = [],
     acompteDateISO,
     deliveryDateISO,
+    isRecurring = false,
+    recurringScope,
   } = params
+
+  // En mode abonnement mensuel : pas de CGV transactionnelles (incompatibles
+  // avec la structure acompte/solde) et pas de calendrier acompte/livraison.
+  const includeCGV = isRecurring ? false : includeCGVRaw
 
   const acompteDateDisplay = formatISODate(acompteDateISO) ?? null
   const deliveryDateDisplay = formatISODate(deliveryDateISO) ?? null
@@ -282,8 +383,10 @@ export function generateDevisHTML(params: DevisParams): string {
 
   const isMulti = allLines.length > 1
   const hostingTypes = new Set(['website', 'redesign', 'webapp', 'ecommerce'])
-  const needsHostingNote = allLines.some((l) => l.project?.type && hostingTypes.has(l.project.type))
-  const missionTitle = isMulti
+  const needsHostingNote = !isRecurring && allLines.some((l) => l.project?.type && hostingTypes.has(l.project.type))
+  const missionTitle = isRecurring
+    ? `Suivi mensuel - ${client.company || formatClientFullName(client)}`
+    : isMulti
     ? `Prestations combinées (${allLines.length} projets)`
     : project
     ? `${projectTypeLabel(project.type)} - ${project.name}`
@@ -796,13 +899,13 @@ export function generateDevisHTML(params: DevisParams): string {
   <div class="grid2">
     <div class="info-block">
       <div class="key">Client</div>
-      <div class="val">${client.company || upperLastName(client.name)}</div>
+      <div class="val">${client.company || formatClientFullName(client)}</div>
       <div class="line">
         ${client.legal_form ? `${client.legal_form}<br>` : ''}
         ${client.address ? `${client.address}${client.city ? ', ' : '<br>'}` : ''}${client.city ? `${client.city}<br>` : ''}
         ${client.siret ? `SIRET : ${client.siret}<br>` : ''}
         ${client.vat_number ? `TVA : ${client.vat_number}<br>` : ''}
-        ${client.name && client.company && client.name !== client.company ? `<br><strong style="color:#C8BFB0">Contact :</strong> ${upperLastName(client.name)}${client.contact_role ? `, ${client.contact_role}` : ''}<br>` : ''}
+        ${client.name && client.company && client.name !== client.company ? `<br><strong style="color:#C8BFB0">Contact :</strong> ${formatClientFullName(client)}${client.contact_role ? `, ${client.contact_role}` : ''}<br>` : ''}
         ${client.email ? `${client.email}<br>` : ''}
         ${client.phone ? `${client.phone}` : ''}
       </div>
@@ -818,9 +921,37 @@ export function generateDevisHTML(params: DevisParams): string {
     </div>
   </div>
 
-  <div class="slabel">Périmètre de la prestation</div>
-  ${isMulti
-    ? allLines.map((l) => `
+  <div class="slabel">${isRecurring ? 'Périmètre du suivi mensuel' : 'Périmètre de la prestation'}</div>
+  ${(() => {
+    // Mode abonnement : on utilise prioritairement `recurringScope` passé en
+    // paramètre, sinon `recurring_support_scope` du projet, sinon fallback
+    // sur le périmètre standard (prestationsForType).
+    if (isRecurring) {
+      const scopeRaw =
+        recurringScope?.trim() ||
+        project?.recurring_support_scope?.trim() ||
+        ''
+      if (scopeRaw) {
+        const lines = sanitizeScopeText(scopeRaw)
+          .split(/\r?\n/)
+          .map((l) => l.replace(/^[\s•‣◦⁃\-*·—–]+/, '').trim())
+          .filter((l) => l.length > 0)
+        if (lines.length > 0) {
+          return `<ul class="prest-list">
+    ${lines.map((p) => `<li>${p}</li>`).join('\n    ')}
+  </ul>`
+        }
+      }
+      // Fallback générique pour un abonnement sans scope renseigné
+      return `<ul class="prest-list">
+    <li>Suivi mensuel des prestations livrées</li>
+    <li>Mises à jour de sécurité et corrections d'anomalies</li>
+    <li>Sauvegardes régulières et supervision de la disponibilité</li>
+    <li>Support prioritaire par email - réponse sous 24h ouvrées</li>
+  </ul>`
+    }
+    return isMulti
+      ? allLines.map((l) => `
     <div style="margin-bottom:6px">
       <div style="font-size:7pt;color:#C9A84C;font-weight:600;letter-spacing:.04em;margin-bottom:2px">
         - ${projectTypeLabel(l.project.type)} · ${l.project.name}
@@ -829,25 +960,33 @@ export function generateDevisHTML(params: DevisParams): string {
         ${prestationsForType(l.project).map((p) => `<li>${p}</li>`).join('\n        ')}
       </ul>
     </div>`).join('')
-    : `<ul class="prest-list">
+      : `<ul class="prest-list">
     ${(project ? prestationsForType(project) : prestationsForType(null)).map((p) => `<li>${p}</li>`).join('\n    ')}
-  </ul>`}
+  </ul>`
+  })()}
 
   ${needsHostingNote ? `<p class="hosting-note">L'hébergement et le nom de domaine sont fournis par le Client. À défaut, ces prestations peuvent être souscrites séparément auprès du Prestataire et sont alors facturées annuellement (art. 9.4 CGV).</p>` : ''}
 
   ${customNotes ? `<div class="cond-block" style="margin-top:8px"><strong>Note :</strong> ${customNotes}</div>` : ''}
 
-  <div class="slabel">Tarification</div>
+  <div class="slabel">${isRecurring ? 'Tarification mensuelle' : 'Tarification'}</div>
   <table class="price-table">
     <thead>
       <tr>
         <th>Prestation</th>
         <th>Description</th>
-        <th style="text-align:right">Montant</th>
+        <th style="text-align:right">${isRecurring ? 'Mensuel HT' : 'Montant'}</th>
       </tr>
     </thead>
     <tbody>
-      ${allLines.length > 0
+      ${isRecurring
+        ? `
+      <tr>
+        <td><strong style="color:#E2C97E">Suivi mensuel</strong></td>
+        <td>Abonnement de suivi - ${client.company || formatClientFullName(client)}</td>
+        <td class="amt">${formatEur(totalAmount)} <span style="font-size:6pt;color:#9E9080;font-weight:400">/ mois</span></td>
+      </tr>`
+        : allLines.length > 0
         ? allLines.map((l) => `
       <tr>
         <td><strong style="color:#E2C97E">${projectTypeLabel(l.project.type)}</strong></td>
@@ -863,12 +1002,14 @@ export function generateDevisHTML(params: DevisParams): string {
     </tbody>
   </table>
   <div class="total-block">
-    <div class="tline"><span>Acompte à la commande (${depositPercent}%)${acompteDateDisplay ? ` <span style="font-size:5.5pt;color:#9E9080;font-weight:400;margin-left:4px">— ${acompteDateDisplay}</span>` : ''}</span><span class="val">${formatEur(deposit)}</span></div>
-    <div class="tline"><span>Solde à la livraison${deliveryDateDisplay ? ` <span style="font-size:5.5pt;color:#9E9080;font-weight:400;margin-left:4px">— ${deliveryDateDisplay}</span>` : ''}</span><span class="val">${formatEur(solde)}</span></div>
-    <div class="tline main"><span>Total HT <span style="font-size:5.5pt;color:#9E9080;font-weight:400;margin-left:6px">(TVA non applicable - art. 293 B du CGI)</span></span><span class="val">${formatEur(totalAmount)}</span></div>
+    ${isRecurring
+      ? `<div class="tline main"><span>Tarif mensuel HT <span style="font-size:5.5pt;color:#9E9080;font-weight:400;margin-left:6px">(TVA non applicable - art. 293 B du CGI)</span></span><span class="val">${formatEur(totalAmount)} <span style="font-size:7pt;color:#9E9080;font-weight:400">/ mois</span></span></div>`
+      : `<div class="tline"><span>Acompte à la commande (${depositPercent}%)${acompteDateDisplay ? ` <span style="font-size:5.5pt;color:#9E9080;font-weight:400;margin-left:4px">- ${acompteDateDisplay}</span>` : ''}</span><span class="val">${formatEur(deposit)}</span></div>
+    <div class="tline"><span>Solde à la livraison${deliveryDateDisplay ? ` <span style="font-size:5.5pt;color:#9E9080;font-weight:400;margin-left:4px">- ${deliveryDateDisplay}</span>` : ''}</span><span class="val">${formatEur(solde)}</span></div>
+    <div class="tline main"><span>Total HT <span style="font-size:5.5pt;color:#9E9080;font-weight:400;margin-left:6px">(TVA non applicable - art. 293 B du CGI)</span></span><span class="val">${formatEur(totalAmount)}</span></div>`}
   </div>
 
-  ${hasSchedule ? `
+  ${!isRecurring && hasSchedule ? `
   <div class="schedule-block">
     <div class="schedule-label">Calendrier prévisionnel</div>
     <div class="schedule-grid">
@@ -888,7 +1029,7 @@ export function generateDevisHTML(params: DevisParams): string {
   </div>
   ` : ''}
 
-  ${recurringLines.length > 0 ? `
+  ${!isRecurring && recurringLines.length > 0 ? `
   <div class="recurring-strip">
     <span class="r-label">Suivi mensuel HT</span>
     <span class="r-items">${recurringLines.map((l) => `<strong>${projectTypeLabel(l.project.type)}</strong> ${formatEur(l.amount)}/mois`).join(' · ')}</span>
@@ -897,7 +1038,15 @@ export function generateDevisHTML(params: DevisParams): string {
   <p class="recurring-foot">La souscription au suivi mensuel sera confirmée par un bon de commande spécifique signé à la livraison, conformément à l'art. 9.2 des CGV. Engagement initial de 12 mois reconductible.</p>
   ` : ''}
 
-  ${includeCGV
+  ${isRecurring
+    ? `<div class="slabel">Conditions de l'abonnement</div>
+  <div class="cond-block">
+    <strong>Tarif</strong> - ${formatEur(totalAmount)} HT par mois, facturé mensuellement.<br>
+    <strong>Aucun acompte</strong> - le règlement s'effectue mois par mois, à terme échu.<br>
+    <strong>Engagement</strong> - reconductible mensuellement par tacite reconduction. Résiliable à tout moment moyennant un préavis d'un mois.<br>
+    <strong>Validité du devis</strong> - 30 jours à compter de sa date d'émission.
+  </div>`
+    : includeCGV
     ? `<p style="margin-top:8px;text-align:center;font-size:6.5pt;letter-spacing:.18em;text-transform:uppercase;color:#9E9080;">
         Conditions générales de vente détaillées en pages 2 à 4 · Signature en page 5
       </p>`
@@ -938,7 +1087,7 @@ ${includeCGV ? renderCGVPage({ quoteNumber, client, depositPercent }) : ''}
    ═══════════════════════════════════════════════════════════ */
 function renderCGVPage(ctx: { quoteNumber: string; client: Client; depositPercent: number }): string {
   const { quoteNumber, client, depositPercent } = ctx
-  const clientName = client.company || upperLastName(client.name)
+  const clientName = client.company || formatClientFullName(client)
   const updatedAt = today()
   const safe = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -1150,8 +1299,8 @@ function renderCGVPage(ctx: { quoteNumber: string; client: Client; depositPercen
         ${client.vat_number ? `TVA ${safe(client.vat_number)}<br>` : ''}
         ${client.address ? `${safe(client.address)}${client.city ? ', ' : '<br>'}` : ''}${client.city ? `${safe(client.city)}<br>` : ''}
         <br>
-        Représenté par : ${client.name && upperLastName(client.name) !== clientName ? `<strong style="color:#C8BFB0">${safe(upperLastName(client.name))}</strong>` : '_____________________________'}${client.contact_role ? `, ${safe(client.contact_role)}` : ''}<br>
-        ${!client.name || upperLastName(client.name) === clientName ? '_________________________________________<br>' : ''}
+        Représenté par : ${client.name && formatClientFullName(client) !== clientName ? `<strong style="color:#C8BFB0">${safe(formatClientFullName(client))}</strong>` : '_____________________________'}${client.contact_role ? `, ${safe(client.contact_role)}` : ''}<br>
+        ${!client.name || formatClientFullName(client) === clientName ? '_________________________________________<br>' : ''}
         ${client.email ? `<span style="color:#9E9080">${safe(client.email)}</span>` : ''}${client.email && client.phone ? ' · ' : ''}${client.phone ? `<span style="color:#9E9080">${safe(client.phone)}</span>` : ''}
       </div>
       <div class="fields">

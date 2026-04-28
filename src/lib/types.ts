@@ -121,6 +121,10 @@ export interface PortalUser {
 export interface Client {
   id: string;
   name: string;
+  /** Prénom du contact — utilisé sur devis/factures (cas mixte). */
+  first_name?: string | null;
+  /** Nom de famille du contact — affiché en MAJUSCULES sur devis/factures. */
+  last_name?: string | null;
   email: string | null;
   phone: string | null;
   company: string | null;
@@ -155,6 +159,10 @@ export interface Project {
   has_recurring_support?: boolean;
   recurring_support_amount?: number | null;
   recurring_support_label?: string | null;
+  /** Périmètre de la prestation principale (texte multi-ligne). */
+  prestation_scope?: string | null;
+  /** Périmètre de la prestation de suivi mensuel. */
+  recurring_support_scope?: string | null;
   created_at?: string;
   updated_at?: string;
 }
