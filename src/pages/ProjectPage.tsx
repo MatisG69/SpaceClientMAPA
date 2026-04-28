@@ -11,6 +11,11 @@ import { UpcomingEvents } from '../components/UpcomingEvents';
 import { ChecklistPreview } from '../components/ChecklistPreview';
 import { TeamContact } from '../components/TeamContact';
 import { DocumentsSection } from '../components/DocumentsSection';
+import { ProjectBriefViewer } from '../components/ProjectBriefViewer';
+import { RequestedResourcesSection } from '../components/RequestedResourcesSection';
+import { ClientCollaborationSection } from '../components/ClientCollaborationSection';
+import { ProductionStatusCard } from '../components/ProductionStatusCard';
+import { ClientExtrasSection } from '../components/ClientExtrasSection';
 import type { Project } from '../lib/types';
 
 export function ProjectPage({ session }: { session: Session }) {
@@ -32,6 +37,7 @@ export function ProjectPage({ session }: { session: Session }) {
     checklist,
     documents,
     sendMessage,
+    refetch,
   } = useProjectData(userId);
 
   const progress = useMemo(() => {
@@ -156,14 +162,63 @@ export function ProjectPage({ session }: { session: Session }) {
               currentStepTitle={currentStep?.title}
             />
 
+            <ProductionStatusCard projectId={selectedProject.id} />
+
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
               <div className="lg:col-span-3 space-y-8">
                 <div>
                   <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
+                    Brief &amp; spécifications
+                  </h2>
+                  <ProjectBriefViewer
+                    projectId={selectedProject.id}
+                    defaultSignature={portalUser?.name ?? client?.name ?? ''}
+                  />
+                </div>
+
+                <div>
+                  <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
+                    Documents demandés
+                  </h2>
+                  <RequestedResourcesSection documents={documents} onRefresh={refetch} />
+                </div>
+
+                <div>
+                  <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
                     Avancement détaillé
                   </h2>
-                  <ProjectTimeline steps={steps} />
+                  <ProjectTimeline
+                    steps={steps}
+                    defaultSignature={portalUser?.name ?? client?.name ?? ''}
+                    onRefresh={refetch}
+                  />
                 </div>
+
+                {client && (
+                  <div>
+                    <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
+                      Collaboration projet
+                    </h2>
+                    <ClientCollaborationSection
+                      projectId={selectedProject.id}
+                      clientId={client.id}
+                      defaultSignature={portalUser?.name ?? client.name ?? ''}
+                    />
+                  </div>
+                )}
+
+                {client && (
+                  <div>
+                    <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
+                      Confidentialité, idées &amp; témoignage
+                    </h2>
+                    <ClientExtrasSection
+                      projectId={selectedProject.id}
+                      clientId={client.id}
+                      defaultSignature={portalUser?.name ?? client.name ?? ''}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">

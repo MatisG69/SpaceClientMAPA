@@ -191,8 +191,10 @@ export function DocumentsSection({
       });
     }
 
-    // Documents arbitraires uploadés
+    // Documents arbitraires uploadés (skip les demandes en attente sans fichier)
     for (const d of documents) {
+      const filePath = d.file_path;
+      if (!filePath) continue;
       const project = d.project_id ? projectById.get(d.project_id) ?? null : null;
       items.push({
         id: `doc-${d.id}`,
@@ -209,7 +211,7 @@ export function DocumentsSection({
           try {
             const { data, error } = await supabase.storage
               .from('client-documents')
-              .createSignedUrl(d.file_path, 60 * 5);
+              .createSignedUrl(filePath, 60 * 5);
             if (error) throw error;
             if (data?.signedUrl) window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
           } catch {
