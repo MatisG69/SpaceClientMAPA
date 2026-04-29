@@ -1088,7 +1088,7 @@ export function generateDevisHTML(params: DevisParams): string {
     <div class="diamond-row">♦</div>
     <div class="brand">MAPA Développement · Matis Gouyet · Entrepreneur Individuel (EI)</div>
     <div class="name" style="font-style:normal;font-family:'Inter',sans-serif;font-size:6.5pt;letter-spacing:.05em;color:#9E9080;line-height:1.55;margin-top:3px">
-      89 Rue Yves Decugis, 59650 Villeneuve-d'Ascq · SIREN 919 461 301 · SIRET 919 461 301 00021<br>
+      14 Rue d'Aguesseau, 59800 Lille · SIREN 919 461 301 · SIRET 919 461 301 00021<br>
       Dispensé d'immatriculation au RCS et au RM · TVA non applicable, art. 293 B du CGI<br>
       contact@mapa-developpement.fr · +33 6 79 62 39 42
     </div>
@@ -1096,10 +1096,26 @@ export function generateDevisHTML(params: DevisParams): string {
 
 </section>
 
-${includeCGV ? renderCGVPage({ quoteNumber, client, depositPercent }) : ''}
+${includeCGV
+  ? renderCGVPage({ quoteNumber, client, depositPercent })
+  : isRecurring
+    ? renderSignaturePage({
+        quoteNumber,
+        client,
+        pageLabel: 'Page 2/2',
+        title: 'Acceptation du devis de suivi mensuel',
+        recap: `La signature de la présente page vaut, de la part du Client, <strong>acceptation sans réserve</strong> du devis de suivi mensuel <strong>${escapeHtml(quoteNumber)}</strong> émis le ${today()} par <strong>MAPA Développement</strong>${parentQuoteRef ? `, en lien avec le devis de prestation initial <strong>${escapeHtml(parentQuoteRef)}</strong>` : ''}. <em>Fait en deux exemplaires originaux.</em>`,
+        mention: `La mention <strong>« Lu et approuvé, bon pour accord »</strong> doit être apposée de la main du signataire, suivie de sa signature et, le cas échéant, du cachet de l'entreprise. Tout exemplaire non signé ou dont la mention manuscrite ferait défaut ne saurait engager les parties.`,
+      })
+    : ''}
 
 </body>
 </html>`
+}
+
+/** Helper d'échappement HTML utilisable depuis l'appelant comme depuis renderCGVPage. */
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1254,7 +1270,7 @@ function renderCGVPage(ctx: { quoteNumber: string; client: Client; depositPercen
   ${cgvHeader('Page 2/5')}
 
   <div class="cgv-preamble">
-    <strong>Préambule.</strong> Les présentes conditions générales de vente (ci-après « CGV ») régissent l'ensemble des relations contractuelles entre <strong>MAPA Développement</strong>, exploitée par Matis GOUYET, entrepreneur individuel sous le régime de la micro-entreprise, immatriculée au Registre National des Entreprises sous le numéro SIREN <strong>919 461 301</strong>, dont le siège est sis 89 Rue Yves Decugis, 59650 Villeneuve-d'Ascq (ci-après « le Prestataire »), et toute personne morale ou personne physique agissant à des fins entrant dans le cadre de son activité commerciale, industrielle, artisanale, libérale ou agricole, passant commande (ci-après « le Client »). Les présentes CGV sont <strong>exclusivement applicables aux relations entre professionnels</strong> au sens du droit français ; elles ne sauraient s'appliquer à un Client consommateur ou non-professionnel au sens de l'article liminaire du Code de la consommation. Toute commande emporte adhésion sans réserve aux présentes CGV, qui prévalent sur tout autre document du Client (CGA, conditions internes), sauf dérogation écrite expresse du Prestataire.
+    <strong>Préambule.</strong> Les présentes conditions générales de vente (ci-après « CGV ») régissent l'ensemble des relations contractuelles entre <strong>MAPA Développement</strong>, exploitée par Matis GOUYET, entrepreneur individuel sous le régime de la micro-entreprise, immatriculée au Registre National des Entreprises sous le numéro SIREN <strong>919 461 301</strong>, dont le siège est sis 14 Rue d'Aguesseau, 59800 Lille (ci-après « le Prestataire »), et toute personne morale ou personne physique agissant à des fins entrant dans le cadre de son activité commerciale, industrielle, artisanale, libérale ou agricole, passant commande (ci-après « le Client »). Les présentes CGV sont <strong>exclusivement applicables aux relations entre professionnels</strong> au sens du droit français ; elles ne sauraient s'appliquer à un Client consommateur ou non-professionnel au sens de l'article liminaire du Code de la consommation. Toute commande emporte adhésion sans réserve aux présentes CGV, qui prévalent sur tout autre document du Client (CGA, conditions internes), sauf dérogation écrite expresse du Prestataire.
   </div>
 
   <div class="cgv-body">
@@ -1284,15 +1300,43 @@ function renderCGVPage(ctx: { quoteNumber: string; client: Client; depositPercen
   <div class="cgv-continued">Signature du devis et des présentes CGV → page suivante</div>
 </section>
 
+${renderSignaturePage({
+  quoteNumber,
+  client,
+  pageLabel: 'Page 5/5',
+  title: 'Acceptation du devis et des Conditions Générales de Vente',
+  recap: `La signature de la présente page vaut, de la part du Client, <strong>acceptation sans réserve</strong> du devis <strong>${safe(quoteNumber)}</strong> émis le ${updatedAt} par <strong>MAPA Développement</strong>, ainsi que des <strong>Conditions Générales de Vente</strong> figurant en pages 2, 3 et 4 du présent document. Le Client reconnaît en avoir pris connaissance préalablement, les avoir comprises, et s'engage à les respecter dans leur intégralité. <em>Fait en deux exemplaires originaux.</em>`,
+  mention: `La mention <strong>« Lu et approuvé, bon pour accord »</strong> doit être apposée de la main du signataire, suivie de sa signature et, le cas échéant, du cachet de l'entreprise. Les <em>paraphes sont recommandés en bas de chaque page</em>. Tout exemplaire non signé ou dont la mention manuscrite ferait défaut ne saurait engager les parties.`,
+})}`
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Page de signature autonome — réutilisable :
+   · pour le devis principal : page 5/5, après les CGV.
+   · pour le devis de suivi mensuel : page 2/2, sans CGV.
+   ═══════════════════════════════════════════════════════════ */
+function renderSignaturePage(ctx: {
+  quoteNumber: string
+  client: Client
+  pageLabel: string
+  title: string
+  recap: string
+  mention: string
+}): string {
+  const { quoteNumber, client, pageLabel, title, recap, mention } = ctx
+  const clientName = client.company || formatClientFullName(client)
+  const updatedAt = today()
+  const safe = escapeHtml
+  return `
 <section class="page page-sign">
   <div class="sign-head">
-    <div class="eyebrow">Annexe contractuelle · Page 5/5</div>
-    <div class="ttl">Acceptation du devis et des Conditions Générales de Vente</div>
+    <div class="eyebrow">Annexe contractuelle · ${pageLabel}</div>
+    <div class="ttl">${title}</div>
     <div class="sub">Devis <strong style="color:#E2C97E">${safe(quoteNumber)}</strong> · ${safe(clientName)}</div>
   </div>
 
   <div class="sign-recap">
-    La signature de la présente page vaut, de la part du Client, <strong>acceptation sans réserve</strong> du devis <strong>${safe(quoteNumber)}</strong> émis le ${updatedAt} par <strong>MAPA Développement</strong>, ainsi que des <strong>Conditions Générales de Vente</strong> figurant en pages 2, 3 et 4 du présent document. Le Client reconnaît en avoir pris connaissance préalablement, les avoir comprises, et s'engage à les respecter dans leur intégralité. <em>Fait en deux exemplaires originaux.</em>
+    ${recap}
   </div>
 
   <div class="sign-grid">
@@ -1301,14 +1345,14 @@ function renderCGVPage(ctx: { quoteNumber: string; client: Client; depositPercen
       <div class="entity">MAPA Développement</div>
       <div class="coords">
         Matis GOUYET, Entrepreneur Individuel (EI)<br>
-        89 Rue Yves Decugis, 59650 Villeneuve-d'Ascq<br>
+        14 Rue d'Aguesseau, 59800 Lille<br>
         SIREN 919 461 301 · SIRET 919 461 301 00021<br>
         Dispensé d'immatriculation au RCS et au RM<br>
         TVA non applicable, art. 293 B du CGI<br>
         contact@mapa-developpement.fr · +33 6 79 62 39 42
       </div>
       <div class="fields">
-        <div class="field"><span class="k">Fait à</span><span>Villeneuve-d'Ascq</span></div>
+        <div class="field"><span class="k">Fait à</span><span>Lille</span></div>
         <div class="field"><span class="k">Le</span><span>${updatedAt}</span></div>
       </div>
       <div class="hint">Signature précédée de la mention manuscrite<br>« Lu et approuvé, bon pour accord » :</div>
@@ -1337,14 +1381,14 @@ function renderCGVPage(ctx: { quoteNumber: string; client: Client; depositPercen
   </div>
 
   <div class="sign-mention">
-    La mention <strong>« Lu et approuvé, bon pour accord »</strong> doit être apposée de la main du signataire, suivie de sa signature et, le cas échéant, du cachet de l'entreprise. Les <em>paraphes sont recommandés en bas de chaque page</em>. Tout exemplaire non signé ou dont la mention manuscrite ferait défaut ne saurait engager les parties.
+    ${mention}
   </div>
 
   <div class="sign-footer">
     <div class="brand">MAPA Développement</div>
     <div class="legal">
       SIREN 919 461 301 · TVA non applicable, art. 293 B du CGI<br>
-      89 Rue Yves Decugis, 59650 Villeneuve-d'Ascq · contact@mapa-developpement.fr · +33 6 79 62 39 42
+      14 Rue d'Aguesseau, 59800 Lille · contact@mapa-developpement.fr · +33 6 79 62 39 42
     </div>
   </div>
 </section>`

@@ -16,6 +16,7 @@ import { RequestedResourcesSection } from '../components/RequestedResourcesSecti
 import { ClientCollaborationSection } from '../components/ClientCollaborationSection';
 import { ProductionStatusCard } from '../components/ProductionStatusCard';
 import { ClientExtrasSection } from '../components/ClientExtrasSection';
+import { BookingSection } from '../components/BookingSection';
 import type { Project } from '../lib/types';
 
 export function ProjectPage({ session }: { session: Session }) {
@@ -250,6 +251,13 @@ export function ProjectPage({ session }: { session: Session }) {
                 </div>
 
                 <UpcomingEvents events={events} />
+
+                <BookingSection
+                  clientId={client?.id ?? null}
+                  portalUserId={portalUser?.id ?? null}
+                  clientLabel={client?.company || client?.name || portalUser?.name || 'Client'}
+                  onBooked={refetch}
+                />
 
                 <ChecklistPreview items={checklist} />
 

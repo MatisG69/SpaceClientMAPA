@@ -70,6 +70,30 @@ export interface CalendarEvent {
   recurrence: CalendarRecurrence;
   project_id?: string | null;
   client_id?: string | null;
+  booking_source?: 'admin' | 'portal' | null;
+  portal_user_id?: string | null;
+}
+
+export interface AvailabilityRule {
+  id: string;
+  /** 0 = dimanche, 1 = lundi, …, 6 = samedi (Date.getDay()) */
+  weekday: number;
+  /** 'HH:MM' ou 'HH:MM:SS' */
+  start_time: string;
+  end_time: string;
+  slot_duration_min: number;
+  buffer_min: number;
+  meeting_label: string | null;
+  active: boolean;
+}
+
+export interface BookingSlot {
+  /** ISO timestamp UTC — début du créneau */
+  start_at: string;
+  /** ISO timestamp UTC — fin du créneau */
+  end_at: string;
+  /** 'HH:MM' local pour affichage */
+  label: string;
 }
 
 export interface ChecklistItem {
