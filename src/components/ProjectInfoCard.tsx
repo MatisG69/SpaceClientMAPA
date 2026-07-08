@@ -1,6 +1,6 @@
-import { Calendar, ExternalLink, Tag, Hourglass } from 'lucide-react';
+import { Calendar, ExternalLink, Tag, Hourglass, Activity } from 'lucide-react';
 import type { ProjectSummary } from '../lib/types';
-import { ProjectStatusBadge } from './StatusBadge';
+import { ProjectStatusBadge, PROJECT_STATUS_LABEL } from './StatusBadge';
 import { daysBetween, formatDateLong, projectTypeLabel } from '../lib/format';
 
 interface ProjectInfoCardProps {
@@ -92,10 +92,17 @@ export function ProjectInfoCard({ project, progress, currentStepTitle }: Project
             />
           )}
           <InfoCell
-            icon={<Hourglass size={12} />}
-            label="Étape en cours"
-            value={currentStepTitle || 'Cadrage en cours'}
+            icon={<Activity size={12} />}
+            label="Statut du projet"
+            value={PROJECT_STATUS_LABEL[project.status]}
           />
+          {currentStepTitle && (
+            <InfoCell
+              icon={<Hourglass size={12} />}
+              label="Étape en cours"
+              value={currentStepTitle}
+            />
+          )}
           <InfoCell
             icon={<ExternalLink size={12} />}
             label="Site livré"

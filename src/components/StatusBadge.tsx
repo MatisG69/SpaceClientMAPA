@@ -1,11 +1,13 @@
 import type { ProjectStatus, ProjectStepStatus } from '../lib/types';
 
+// Libellés alignés sur ceux du CRM (ProjectForm.tsx) — le client voit
+// exactement le statut sélectionné côté MAPA Développement.
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
-  planning: 'En préparation',
+  planning: 'Planification',
   quote_sent: 'Devis envoyé',
   in_progress: 'En cours',
-  review: 'En relecture',
-  completed: 'Livré',
+  review: 'En révision',
+  completed: 'Terminé',
   on_hold: 'En pause',
 };
 
