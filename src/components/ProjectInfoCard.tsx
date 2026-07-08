@@ -15,6 +15,8 @@ export function ProjectInfoCard({ project, progress, currentStepTitle }: Project
   const end = project.end_date ? new Date(project.end_date) : null;
   const elapsed = start ? Math.max(0, daysBetween(start, today)) : null;
   const remaining = end ? daysBetween(today, end) : null;
+  // Projet livré : la cellule de livraison bascule sur la date effective de fin.
+  const delivered = project.status === 'completed';
 
   return (
     <section className="rounded-3xl border border-ws-line bg-gradient-to-b from-ws-panel/80 to-ws-panel/40 p-6 md:p-8 relative overflow-hidden">
@@ -77,10 +79,12 @@ export function ProjectInfoCard({ project, progress, currentStepTitle }: Project
           {project.end_date && (
             <InfoCell
               icon={<Calendar size={12} />}
-              label="Livraison estimée"
+              label={delivered ? 'Livraison terminée' : 'Livraison estimée'}
               value={formatDateLong(project.end_date)}
               sub={
-                remaining != null
+                delivered
+                  ? undefined
+                  : remaining != null
                   ? remaining > 0
                     ? `dans ${remaining} j`
                     : remaining === 0
@@ -88,7 +92,7 @@ export function ProjectInfoCard({ project, progress, currentStepTitle }: Project
                     : `dépassée de ${Math.abs(remaining)} j`
                   : undefined
               }
-              accent={remaining != null && remaining < 0}
+              accent={!delivered && remaining != null && remaining < 0}
             />
           )}
           <InfoCell
