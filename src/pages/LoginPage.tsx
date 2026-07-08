@@ -43,21 +43,23 @@ export function LoginPage() {
       throw new Error('Les deux mots de passe ne correspondent pas.');
     }
 
-    // Vérification de pré-autorisation : un portal_users doit exister avec cet email
-    // et auth_user_id NULL (sinon le compte est déjà créé OU l'email n'est pas autorisé)
-    const { data: preauth, error: preErr } = await supabase
-      .from('portal_users')
-      .select('id, auth_user_id')
-      .eq('email', cleanEmail)
-      .maybeSingle();
+    // Vérification de pré-autorisation via une fonction Postgres SECURITY DEFINER.
+    // Le contrôle s'exécute en anonyme (le client n'est pas encore connecté) : on
+    // ne peut donc pas lire `portal_users` directement (RLS bloque le rôle anon
+    // depuis le durcissement du CRM). La RPC renvoie uniquement un statut, sans
+    // exposer la table.
+    const { data: status, error: preErr } = await supabase.rpc(
+      'portal_preauth_status',
+      { p_email: cleanEmail }
+    );
 
     if (preErr) throw new Error(preErr.message);
-    if (!preauth) {
+    if (status === 'not_authorized') {
       throw new Error(
         'Cet email n\'est pas autorisé. Contactez MAPA Développement pour obtenir un accès.'
       );
     }
-    if (preauth.auth_user_id) {
+    if (status === 'already_registered') {
       throw new Error(
         'Un compte existe déjà pour cet email. Utilisez l\'onglet « Connexion ».'
       );
