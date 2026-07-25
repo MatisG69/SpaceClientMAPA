@@ -42,7 +42,6 @@ export function MonthlyRequestsSection({
 
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState('');
-  const [signature, setSignature] = useState(defaultSignature ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -79,7 +78,7 @@ export function MonthlyRequestsSection({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await submitRequest({ content, signature });
+      await submitRequest({ content, signature: defaultSignature ?? '' });
       setContent('');
       setShowForm(false);
     } catch (err) {
@@ -147,18 +146,6 @@ export function MonthlyRequestsSection({
               required
               rows={4}
               placeholder="Décrivez précisément ce que vous souhaitez (modification, ajout, correction…)."
-              className="w-full px-3 py-2.5 rounded-lg bg-ws-deep/50 border border-ws-line text-ws-paper text-sm placeholder:text-ws-mist/60 focus:outline-none focus:border-ws-accent/50"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-mono uppercase tracking-[0.18em] text-ws-mist mb-1.5">
-              Signature (votre nom)
-            </label>
-            <input
-              type="text"
-              value={signature}
-              onChange={(e) => setSignature(e.target.value)}
-              placeholder="Ex. Linda Dupont"
               className="w-full px-3 py-2.5 rounded-lg bg-ws-deep/50 border border-ws-line text-ws-paper text-sm placeholder:text-ws-mist/60 focus:outline-none focus:border-ws-accent/50"
             />
           </div>
