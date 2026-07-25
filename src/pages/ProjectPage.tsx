@@ -15,6 +15,7 @@ import { ProjectBriefViewer } from '../components/ProjectBriefViewer';
 import { RequestedResourcesSection } from '../components/RequestedResourcesSection';
 import { ClientCollaborationSection } from '../components/ClientCollaborationSection';
 import { ProductionStatusCard } from '../components/ProductionStatusCard';
+import { MonthlyRequestsSection } from '../components/MonthlyRequestsSection';
 import { ClientExtrasSection } from '../components/ClientExtrasSection';
 import { BookingSection } from '../components/BookingSection';
 import type { Project } from '../lib/types';
@@ -104,7 +105,7 @@ export function ProjectPage({ session }: { session: Session }) {
             </h2>
             <p className="text-sm text-ws-mist mb-6 leading-relaxed">{error}</p>
             <a
-              href="mailto:contact@mapa-developpement.fr"
+              href="mailto:contactmapadev@gmail.com"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ws-accent text-ws-void text-sm font-semibold hover:brightness-110 transition-all"
             >
               <Mail size={14} />
@@ -164,6 +165,12 @@ export function ProjectPage({ session }: { session: Session }) {
             />
 
             <ProductionStatusCard projectId={selectedProject.id} />
+
+            <MonthlyRequestsSection
+              project={selectedProject}
+              clientId={client?.id ?? null}
+              defaultSignature={portalUser?.name ?? client?.name ?? ''}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
               <div className="lg:col-span-3 space-y-8">
@@ -270,7 +277,7 @@ export function ProjectPage({ session }: { session: Session }) {
 
       <footer className="border-t border-ws-line py-6 text-center">
         <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-ws-mist">
-          © MAPA Développement · contact@mapa-developpement.fr
+          © MAPA Développement · contactmapadev@gmail.com
         </p>
       </footer>
     </div>

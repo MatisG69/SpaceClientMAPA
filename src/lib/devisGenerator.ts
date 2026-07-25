@@ -1090,7 +1090,7 @@ export function generateDevisHTML(params: DevisParams): string {
     <div class="name" style="font-style:normal;font-family:'Inter',sans-serif;font-size:6.5pt;letter-spacing:.05em;color:#9E9080;line-height:1.55;margin-top:3px">
       14 Rue d'Aguesseau, 59800 Lille · SIREN 919 461 301 · SIRET 919 461 301 00021<br>
       Dispensé d'immatriculation au RCS et au RM · TVA non applicable, art. 293 B du CGI<br>
-      contact@mapa-developpement.fr · +33 6 79 62 39 42
+      contactmapadev@gmail.com · +33 6 79 62 39 42
     </div>
   </div>
 
@@ -1349,7 +1349,7 @@ function renderSignaturePage(ctx: {
         SIREN 919 461 301 · SIRET 919 461 301 00021<br>
         Dispensé d'immatriculation au RCS et au RM<br>
         TVA non applicable, art. 293 B du CGI<br>
-        contact@mapa-developpement.fr · +33 6 79 62 39 42
+        contactmapadev@gmail.com · +33 6 79 62 39 42
       </div>
       <div class="fields">
         <div class="field"><span class="k">Fait à</span><span>Lille</span></div>
@@ -1388,7 +1388,7 @@ function renderSignaturePage(ctx: {
     <div class="brand">MAPA Développement</div>
     <div class="legal">
       SIREN 919 461 301 · TVA non applicable, art. 293 B du CGI<br>
-      14 Rue d'Aguesseau, 59800 Lille · contact@mapa-developpement.fr · +33 6 79 62 39 42
+      14 Rue d'Aguesseau, 59800 Lille · contactmapadev@gmail.com · +33 6 79 62 39 42
     </div>
   </div>
 </section>`

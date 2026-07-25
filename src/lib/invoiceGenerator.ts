@@ -100,7 +100,7 @@ export const MAPA_VENDOR: VendorInfo = {
   city: 'Lille',
   siren: '919 461 301',
   siret: '919 461 301 00021',
-  email: 'contact@mapa-developpement.fr',
+  email: 'contactmapadev@gmail.com',
   phone: '+33 6 79 62 39 42',
   vatMention: 'TVA non applicable, art. 293 B du CGI',
   // Harmonisé avec l'art. 9.1/9.2 des CGV (B2B, art. L. 441-10 C. com.)

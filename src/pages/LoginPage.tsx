@@ -257,10 +257,10 @@ export function LoginPage() {
             <br />
             Problème ? Contactez-nous à{' '}
             <a
-              href="mailto:contact@mapa-developpement.fr"
+              href="mailto:contactmapadev@gmail.com"
               className="text-ws-accent hover:text-ws-accent-soft"
             >
-              contact@mapa-developpement.fr
+              contactmapadev@gmail.com
             </a>
           </p>
         </form>

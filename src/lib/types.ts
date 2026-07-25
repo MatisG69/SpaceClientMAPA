@@ -20,6 +20,24 @@ export interface ProjectSummary {
   progress: number;
   budget: number | null;
   created_at?: string;
+  /** Nombre de demandes mensuelles incluses dans le forfait (0/absent = pas de forfait). */
+  monthly_request_quota?: number;
+  /** Prix € HT affiché pour chaque demande au-delà du quota mensuel. */
+  monthly_extra_request_price?: number;
+}
+
+export type MonthlyRequestStatus = 'submitted' | 'in_progress' | 'done' | 'declined';
+
+export interface MonthlyRequest {
+  id: string;
+  project_id: string;
+  client_id: string;
+  content: string;
+  submitted_by_signature: string | null;
+  status: MonthlyRequestStatus;
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export type QuoteStatus = 'draft' | 'sent' | 'signed' | 'refused' | 'expired';

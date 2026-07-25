@@ -25,12 +25,12 @@ export function TeamContact() {
 
         <div className="space-y-2">
           <a
-            href="mailto:contact@mapa-developpement.fr"
+            href="mailto:contactmapadev@gmail.com"
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-ws-deep/40 border border-ws-line hover:border-ws-accent/40 transition-colors group"
           >
             <Mail size={14} className="text-ws-accent flex-shrink-0" />
             <span className="text-sm text-ws-paper group-hover:text-ws-accent truncate">
-              contact@mapa-developpement.fr
+              contactmapadev@gmail.com
             </span>
           </a>
           <a
