@@ -203,16 +203,11 @@ export function ProjectPage({ session }: { session: Session }) {
                 </div>
 
                 {client && (
-                  <div>
-                    <h2 className="font-display text-[11px] font-mono font-semibold text-ws-paper mb-4 uppercase tracking-[0.2em]">
-                      Collaboration projet
-                    </h2>
-                    <ClientCollaborationSection
-                      projectId={selectedProject.id}
-                      clientId={client.id}
-                      defaultSignature={portalUser?.name ?? client.name ?? ''}
-                    />
-                  </div>
+                  <ClientCollaborationSection
+                    projectId={selectedProject.id}
+                    clientId={client.id}
+                    defaultSignature={portalUser?.name ?? client.name ?? ''}
+                  />
                 )}
 
                 {client && (
