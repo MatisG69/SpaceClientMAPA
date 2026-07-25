@@ -212,7 +212,8 @@ export function MonthlyRequestsSection({
                 </span>
                 {extraIds.has(r.id) ? (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[9px] font-mono uppercase tracking-[0.15em]">
-                    Supplémentaire · {formatEur(price)}
+                    Supplémentaire · {formatEur(r.custom_price ?? price)}
+                    {r.custom_price != null && ' · tarif spécifique'}
                   </span>
                 ) : (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-[9px] font-mono uppercase tracking-[0.15em]">

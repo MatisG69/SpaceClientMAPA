@@ -36,6 +36,8 @@ export interface MonthlyRequest {
   submitted_by_signature: string | null;
   status: MonthlyRequestStatus;
   admin_notes: string | null;
+  /** Prix € HT spécifique fixé par l'admin pour cette demande hors-forfait. null = prix par défaut du projet. */
+  custom_price: number | null;
   created_at: string;
   updated_at: string;
 }
